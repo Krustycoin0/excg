@@ -31,6 +31,7 @@ export const NavbarTabs = () => {
     },
   };
 
+
   const tabStyles = {
     height: '48px',
     width: '142px',
