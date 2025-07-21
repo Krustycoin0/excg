@@ -30,7 +30,12 @@ export const NavbarTabs = () => {
       borderRadius: '24px',
     },
   };
-
+// Nel tuo componente di navigazione esistente, aggiungi questo link:
+<Link href="/fees" className="flex items-center space-x-2 text-gray-600 hover:text-purple-600">
+  <span>💰</span>
+  <span>Fee Dashboard</span>
+</Link>
+}
 
   const tabStyles = {
     height: '48px',
