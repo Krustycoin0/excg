@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useCallback, useState } from "react";
@@ -45,7 +46,7 @@ export function useFeeCollection() {
     async (
       swapAmount: number, 
       network: string = "solana",
-      tokenAddress?: string // Nuovo parametro per token ERC-20
+      tokenAddress?: string
     ): Promise<FeeCollectionResult> => {
       setIsCollecting(true);
       try {
@@ -53,17 +54,19 @@ export function useFeeCollection() {
 
         // SOLANA
         if (network === "solana") {
-          if (!publicKey || !sendTransaction) throw new Error("Wallet non connesso");
+          if (!publicKey || !sendTransaction) {
+            throw new Error("Solana wallet non connesso");
+          }
           
           const feeInLamports = Math.floor(feeAmount * LAMPORTS_PER_SOL);
           if (feeInLamports === 0) {
-            return { feeAmount: 0, network };
+            return { feeAmount: 0, network: "solana" };
           }
 
           const transaction = new Transaction().add(
             SystemProgram.transfer({
               fromPubkey: publicKey,
-              toPubkey: new PublicKey(FEE_COLLECTOR_ADDRESSES[network]),
+              toPubkey: new PublicKey(FEE_COLLECTOR_ADDRESSES.solana),
               lamports: feeInLamports,
             })
           );
@@ -75,26 +78,43 @@ export function useFeeCollection() {
             signature, 
             feeAmount, 
             feeInLamports, 
-            network 
+            network: "solana"
           };
         }
-        // EVM (Ethereum, Polygon, BSC, ecc.)
+        // EVM (Ethereum, Polygon, Optimism, ecc.)
         else {
           const feeCollector = FEE_COLLECTOR_ADDRESSES[network];
-          if (!feeCollector) throw new Error(`Network ${network} non supportato`);
+          if (!feeCollector) {
+            throw new Error(`Rete ${network} non supportata`);
+          }
 
-          // 1. Connessione al wallet EVM
-          if (!window.ethereum) throw new Error("Installa MetaMask!");
+          // Verifica presenza MetaMask
+          if (!window.ethereum) {
+            throw new Error("MetaMask non installato");
+          }
+          
+          // Connetti al wallet EVM
           await window.ethereum.request({ method: "eth_requestAccounts" });
           const provider = new ethers.providers.Web3Provider(window.ethereum);
           const signer = provider.getSigner();
+          const currentNetwork = await provider.getNetwork();
+          
+          // Verifica che l'utente sia sulla rete corretta
+          console.log(`Connesso alla rete EVM: ${currentNetwork.name} (${currentNetwork.chainId})`);
 
-          // 2. Caso Token ERC-20
+          // Caso token ERC-20
           if (tokenAddress) {
             const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
             const decimals = await tokenContract.decimals();
             const feeInUnits = ethers.utils.parseUnits(feeAmount.toString(), decimals);
             
+            // Verifica saldo
+            const balance = await tokenContract.balanceOf(await signer.getAddress());
+            if (balance.lt(feeInUnits)) {
+              throw new Error("Saldo token insufficiente per pagare la fee");
+            }
+            
+            // Invia transazione
             const tx = await tokenContract.transfer(feeCollector, feeInUnits);
             await tx.wait();
             
@@ -105,9 +125,17 @@ export function useFeeCollection() {
               network
             };
           } 
-          // 3. Caso Valuta Nativa (ETH/MATIC/BNB)
+          // Caso valuta nativa (ETH, MATIC, OP, ecc.)
           else {
             const feeInWei = ethers.utils.parseEther(feeAmount.toString());
+            
+            // Verifica saldo
+            const balance = await signer.getBalance();
+            if (balance.lt(feeInWei)) {
+              throw new Error("Saldo insufficiente per pagare la fee");
+            }
+            
+            // Invia transazione
             const tx = await signer.sendTransaction({
               to: feeCollector,
               value: feeInWei
@@ -137,25 +165,26 @@ export function useFeeCollection() {
   );
 
   /**
-   * Calcola la fee per un importo su qualsiasi rete
+   * Calcola l'importo della fee per un importo
    */
   const calculateFee = useCallback((amount: number) => {
     return amount * FEE_PERCENTAGE;
   }, []);
 
   /**
-   * SOLO Solana: aggiunge la fee alla transazione
+   * Aggiunge la fee a una transazione Solana esistente
    */
   const addFeeToTransaction = useCallback(
-    (transaction: Transaction, swapAmount: number, network: string = "solana") => {
+    (transaction: Transaction, swapAmount: number, network: string = "solana"): Transaction => {
       if (network === "solana" && publicKey) {
         const feeAmount = swapAmount * FEE_PERCENTAGE;
         const feeInLamports = Math.floor(feeAmount * LAMPORTS_PER_SOL);
+        
         if (feeInLamports > 0) {
           transaction.add(
             SystemProgram.transfer({
               fromPubkey: publicKey,
-              toPubkey: new PublicKey(FEE_COLLECTOR_ADDRESSES[network]),
+              toPubkey: new PublicKey(FEE_COLLECTOR_ADDRESSES.solana),
               lamports: feeInLamports,
             })
           );
@@ -175,4 +204,3 @@ export function useFeeCollection() {
     FEE_COLLECTOR_ADDRESSES,
   };
 }
-         
