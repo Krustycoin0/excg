@@ -1,7 +1,11 @@
 import 'package:lifi_flutter/lifi_flutter.dart';
 
 class LifiService {
-  final Lifi _lifi = Lifi();
+  final Lifi _lifi;
+
+  LifiService() : _lifi = Lifi(
+    apiKey: '37f3b0ae-58d0-423a-a895-133cd60f2b72.20bd41f0-014e-4389-9dfa-9eaefb8589e5',
+  );
 
   Future<Quote> getSwapQuote({
     required String fromToken,
