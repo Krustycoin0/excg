@@ -2,7 +2,7 @@
 import { useCallback, useState } from "react";
 import { ethers } from "ethers";
 
-export const FEE_COLLECTOR_ADDRESS = "0xC6927e8e6A8B966fC3cBDfFB639c9db459A8C5D5";
+export const FEE_COLLECTOR_ADDRESS = "0xFD825e57383f42d483a81EF4caa118b859538540";
 export const FEE_PERCENTAGE = 0.003; // 0.3%
 
 interface EVMFeeResult {
