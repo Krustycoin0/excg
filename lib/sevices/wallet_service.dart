@@ -1,8 +1,3 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:web3dart/web3dart.dart';
 import 'package:walletconnect_flutter/walletconnect_flutter.dart';
 
 class WalletService {
@@ -35,7 +30,6 @@ class WalletService {
         final session = await connector!.createSession(
           chainId: 1,
           onDisplayUri: (uri) async {
-            // Qui puoi mostrare il QR code o aprire un deep link
             debugPrint("WalletConnect URI: $uri");
           },
         );
