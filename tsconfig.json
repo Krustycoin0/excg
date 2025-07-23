@@ -31,3 +31,13 @@
   "exclude": ["node_modules"],
   "include": ["next-env.d.ts", "env.d.ts", "**/*.ts", "**/*.tsx"]
 }
+{
+  "compilerOptions": {
+    // ... altre opzioni ...
+    "types": [
+      "@lifi/widget/typings",
+      "@solana/wallet-adapter-base",
+      "wagmi"
+    ]
+  }
+}
