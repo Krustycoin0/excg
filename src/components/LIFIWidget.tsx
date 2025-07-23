@@ -6,72 +6,61 @@ import dynamic from "next/dynamic";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useAccount } from "wagmi";
 import { NETWORK_DETAILS } from "@/utils/networks";
+import { useFeeCollection } from "@/hooks/useFeeCollection";
 
-// Caricamento dinamico per evitare problemi SSR
 const LiFiWidgetDynamic = dynamic(
   () => import("@lifi/widget").then((module) => module.LiFiWidget),
   {
     ssr: false,
-    loading: () => <div className="text-center p-8">Caricamento widget swap...</div>
+    loading: () => (
+      <div className="flex flex-col items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+        <p>Caricamento interfaccia di swap...</p>
+      </div>
+    )
   }
 );
 
-// Configurazione avanzata del widget
-const widgetConfig = {
-  integrator: "ExcgApp",
-  containerStyle: {
-    border: "1px solid rgb(234, 234, 234)",
-    borderRadius: "16px",
-    maxWidth: "480px",
-    overflow: "hidden",
-  },
-  theme: {
-    palette: {
-      primary: { main: "#3b82f6" }, // Blu di Tailwind
-      secondary: { main: "#10b981" }, // Verde di Tailwind
-    },
-    shape: {
-      borderRadius: 16,
-      borderRadiusSecondary: 12,
-    },
-  },
-  disableAppearance: true,
-  hiddenUI: ["appearance"],
-  variant: "expandable",
-};
-
 const LiFiWidget = () => {
-  const [isMounted, setIsMounted] = useState(false);
   const { publicKey } = useWallet();
   const { address: evmAddress } = useAccount();
-  const [activeChain, setActiveChain] = useState<number>(1); // Ethereum di default
+  const { collectFee } = useFeeCollection();
+  const [lastSwap, setLastSwap] = useState<any>(null);
+  const [activeChain, setActiveChain] = useState<number>(1);
+  const [widgetReady, setWidgetReady] = useState(false);
 
-  // Risincronizza il wallet con il widget
+  // Integrazione con la raccolta fee
   useEffect(() => {
-    setIsMounted(true);
-    
-    const handleWalletUpdate = () => {
-      const lifiWallet = window.lifiWallet;
-      if (!lifiWallet) return;
+    if (!window.lifi) return;
 
-      // Connessione Solana
-      if (publicKey) {
-        lifiWallet.setChain(99999); // ChainId personalizzato per Solana
-        lifiWallet.setAccount(publicKey.toString());
-        setActiveChain(99999);
-      } 
-      // Connessione EVM
-      else if (evmAddress) {
-        lifiWallet.setChain(1); // Ethereum
-        lifiWallet.setAccount(evmAddress);
-        setActiveChain(1);
+    // Gestione eventi LI.FI
+    window.lifi.on("routeExecutionStarted", (route) => {
+      console.log("Swap iniziato:", route);
+    });
+
+    window.lifi.on("routeExecutionCompleted", async (route) => {
+      console.log("Swap completato:", route);
+      setLastSwap(route);
+      
+      try {
+        // Calcola e raccogli la fee
+        const fromAmount = parseFloat(route.fromAmount);
+        const networkKey = getNetworkKey(route.fromChainId);
+        
+        if (networkKey) {
+          const result = await collectFee(
+            fromAmount,
+            networkKey,
+            route.fromToken.address
+          );
+          
+          console.log("Fee raccolta:", result);
+        }
+      } catch (error) {
+        console.error("Errore nella raccolta fee:", error);
       }
-    };
-
-    // Aggiorna al cambio wallet
-    window.addEventListener("lifiWalletUpdated", handleWalletUpdate);
-    return () => window.removeEventListener("lifiWalletUpdated", handleWalletUpdate);
-  }, [publicKey, evmAddress]);
+    });
+  }, [collectFee]);
 
   // Mappatura personalizzata per Solana
   const customChains = [
@@ -102,37 +91,104 @@ const LiFiWidget = () => {
     }))
   ];
 
-  if (!isMounted) return null;
+  // Funzione di supporto per convertire chainId in networkKey
+  const getNetworkKey = (chainId: number): string | null => {
+    const mapping: Record<number, string> = {
+      1: "ethereum",
+      10: "op",
+      137: "polygon",
+      56: "bsc",
+      43114: "avalanche",
+      42161: "arbitrum",
+      8453: "base",
+      59144: "linea",
+      11297108109: "palm",
+      64165: "sonic",
+      99999: "solana"
+    };
+    
+    return mapping[chainId] || null;
+  };
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold">Swap Cross-Chain</h1>
-        <p className="text-gray-600 mt-2">
-          Scambia asset tra Solana, Ethereum, Optimism e 20+ altre blockchain
-        </p>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div className="max-w-4xl mx-auto">
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
         <LiFiWidgetDynamic
-          config={widgetConfig}
+          config={{
+            integrator: "ExcgApp",
+            containerStyle: {
+              border: "1px solid #eaeaea",
+              borderRadius: "16px",
+            },
+            theme: {
+              palette: {
+                primary: { main: "#3b82f6" },
+                secondary: { main: "#10b981" },
+              },
+              shape: {
+                borderRadius: 16,
+                borderRadiusSecondary: 12,
+              },
+            },
+            fee: {
+              integrator: "0xFD825e57383f42d483a81EF4caa118b859538540",
+              fee: 0.003, // 0.3%
+            },
+            sdkConfig: {
+              defaultRouteOptions: {
+                integrator: "ExcgApp",
+                fee: 0.003, // 0.3%
+                feeConfig: {
+                  feeAddress: "0xFD825e57383f42d483a81EF4caa118b859538540",
+                  integratorFee: 0.003,
+                },
+              },
+            },
+          }}
           chains={customChains}
           activeChain={activeChain}
+          onWidgetLoad={() => setWidgetReady(true)}
         />
       </div>
 
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <h3 className="font-bold text-blue-700">1. Seleziona Asset</h3>
-          <p className="text-sm mt-1">Scegli token e quantità da scambiare</p>
+      {lastSwap && (
+        <div className="bg-green-50 p-4 rounded-lg mb-6">
+          <h3 className="font-bold text-lg mb-2">Ultimo Swap Completato</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="font-medium">Da:</p>
+              <p>
+                {lastSwap.fromAmount} {lastSwap.fromToken.symbol} 
+                <span className="text-gray-500 ml-2">(Chain ID: {lastSwap.fromChainId})</span>
+              </p>
+            </div>
+            <div>
+              <p className="font-medium">A:</p>
+              <p>
+                {lastSwap.toAmount} {lastSwap.toToken.symbol} 
+                <span className="text-gray-500 ml-2">(Chain ID: {lastSwap.toChainId})</span>
+              </p>
+            </div>
+          </div>
         </div>
-        <div className="bg-green-50 p-4 rounded-lg">
-          <h3 className="font-bold text-green-700">2. Connetti Wallet</h3>
-          <p className="text-sm mt-1">Usa Phantom, MetaMask o altri wallet</p>
-        </div>
-        <div className="bg-purple-50 p-4 rounded-lg">
-          <h3 className="font-bold text-purple-700">3. Conferma Swap</h3>
-          <p className="text-sm mt-1">Completa la transazione nel tuo wallet</p>
+      )}
+
+      <div className="bg-blue-50 p-4 rounded-lg">
+        <h3 className="font-bold text-blue-700 mb-2">Wallet Connessi</h3>
+        <div className="flex flex-wrap gap-4">
+          {publicKey && (
+            <div className="bg-white p-3 rounded-lg shadow-sm">
+              <p className="font-medium">Solana:</p>
+              <p className="text-sm truncate max-w-xs">{publicKey.toString()}</p>
+            </div>
+          )}
+          
+          {evmAddress && (
+            <div className="bg-white p-3 rounded-lg shadow-sm">
+              <p className="font-medium">EVM:</p>
+              <p className="text-sm truncate max-w-xs">{evmAddress}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
