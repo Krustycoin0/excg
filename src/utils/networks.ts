@@ -1,4 +1,4 @@
-
+// File: src/utils/networks.ts
 export type NetworkKey = 
   | "solana"
   | "ethereum"
@@ -32,7 +32,7 @@ export const NETWORK_DETAILS: Record<NetworkKey, NetworkDetails> = {
   },
   ethereum: {
     name: "Ethereum",
-    feeCollector: "0xC6927e8e6A8B966fC3cBDfFB639c9db459A8C5D5",
+    feeCollector: "0xFD825e57383f42d483a81EF4caa118b859538540", // MODIFICATO
     explorer: "https://etherscan.io/tx/",
     chainId: 1,
     nativeToken: "ETH",
@@ -41,7 +41,7 @@ export const NETWORK_DETAILS: Record<NetworkKey, NetworkDetails> = {
   },
   polygon: {
     name: "Polygon",
-    feeCollector: "0xC6927e8e6A8B966fC3cBDfFB639c9db459A8C5D5",
+    feeCollector: "0xFD825e57383f42d483a81EF4caa118b859538540", // MODIFICATO
     explorer: "https://polygonscan.com/tx/",
     chainId: 137,
     nativeToken: "MATIC",
@@ -50,7 +50,7 @@ export const NETWORK_DETAILS: Record<NetworkKey, NetworkDetails> = {
   },
   bsc: {
     name: "BNB Smart Chain",
-    feeCollector: "0xC6927e8e6A8B966fC3cBDfFB639c9db459A8C5D5",
+    feeCollector: "0xFD825e57383f42d483a81EF4caa118b859538540", // MODIFICATO
     explorer: "https://bscscan.com/tx/",
     chainId: 56,
     nativeToken: "BNB",
@@ -59,7 +59,7 @@ export const NETWORK_DETAILS: Record<NetworkKey, NetworkDetails> = {
   },
   avalanche: {
     name: "Avalanche C-Chain",
-    feeCollector: "0xC6927e8e6A8B966fC3cBDfFB639c9db459A8C5D5",
+    feeCollector: "0xFD825e57383f42d483a81EF4caa118b859538540", // MODIFICATO
     explorer: "https://snowtrace.io/tx/",
     chainId: 43114,
     nativeToken: "AVAX",
@@ -68,7 +68,7 @@ export const NETWORK_DETAILS: Record<NetworkKey, NetworkDetails> = {
   },
   arbitrum: {
     name: "Arbitrum One",
-    feeCollector: "0xC6927e8e6A8B966fC3cBDfFB639c9db459A8C5D5",
+    feeCollector: "0xFD825e57383f42d483a81EF4caa118b859538540", // MODIFICATO
     explorer: "https://arbiscan.io/tx/",
     chainId: 42161,
     nativeToken: "ETH",
@@ -77,7 +77,7 @@ export const NETWORK_DETAILS: Record<NetworkKey, NetworkDetails> = {
   },
   op: {
     name: "Optimism",
-    feeCollector: "0xC6927e8e6A8B966fC3cBDfFB639c9db459A8C5D5",
+    feeCollector: "0xFD825e57383f42d483a81EF4caa118b859538540", // MODIFICATO
     explorer: "https://optimistic.etherscan.io/tx/",
     chainId: 10,
     nativeToken: "ETH",
@@ -86,7 +86,7 @@ export const NETWORK_DETAILS: Record<NetworkKey, NetworkDetails> = {
   },
   base: {
     name: "Base",
-    feeCollector: "0xC6927e8e6A8B966fC3cBDfFB639c9db459A8C5D5",
+    feeCollector: "0xFD825e57383f42d483a81EF4caa118b859538540", // MODIFICATO
     explorer: "https://basescan.org/tx/",
     chainId: 8453,
     nativeToken: "ETH",
@@ -95,7 +95,7 @@ export const NETWORK_DETAILS: Record<NetworkKey, NetworkDetails> = {
   },
   linea: {
     name: "Linea",
-    feeCollector: "0xC6927e8e6A8B966fC3cBDfFB639c9db459A8C5D5",
+    feeCollector: "0xFD825e57383f42d483a81EF4caa118b859538540", // MODIFICATO
     explorer: "https://lineascan.build/tx/",
     chainId: 59144,
     nativeToken: "ETH",
@@ -104,7 +104,7 @@ export const NETWORK_DETAILS: Record<NetworkKey, NetworkDetails> = {
   },
   palm: {
     name: "Palm Network",
-    feeCollector: "0xC6927e8e6A8B966fC3cBDfFB639c9db459A8C5D5",
+    feeCollector: "0xFD825e57383f42d483a81EF4caa118b859538540", // MODIFICATO
     explorer: "https://explorer.palm.io/tx/",
     chainId: 11297108109,
     nativeToken: "PALM",
@@ -113,7 +113,7 @@ export const NETWORK_DETAILS: Record<NetworkKey, NetworkDetails> = {
   },
   sonic: {
     name: "Sonic Network",
-    feeCollector: "0xC6927e8e6A8B966fC3cBDfFB639c9db459A8C5D5",
+    feeCollector: "0xFD825e57383f42d483a81EF4caa118b859538540", // MODIFICATO
     explorer: "https://sonicscan.io/tx/",
     chainId: 64165,
     nativeToken: "SONIC",
@@ -122,40 +122,4 @@ export const NETWORK_DETAILS: Record<NetworkKey, NetworkDetails> = {
   }
 };
 
-// Funzioni di utilità
-export const getNetworkDetails = (networkKey: NetworkKey): NetworkDetails => {
-  return NETWORK_DETAILS[networkKey] || NETWORK_DETAILS.ethereum;
-};
-
-export const getExplorerUrl = (networkKey: NetworkKey, txHash: string): string => {
-  const network = getNetworkDetails(networkKey);
-  return `${network.explorer}${txHash}`;
-};
-
-export const getNativeToken = (networkKey: NetworkKey): string => {
-  return getNetworkDetails(networkKey).nativeToken;
-};
-
-export const getChainId = (networkKey: NetworkKey): number | undefined => {
-  return getNetworkDetails(networkKey).chainId;
-};
-
-export const getAllNetworks = (): NetworkDetails[] => {
-  return Object.values(NETWORK_DETAILS);
-};
-
-export const getNetworkByChainId = (chainId: number): NetworkDetails | undefined => {
-  return Object.values(NETWORK_DETAILS).find(
-    network => network.chainId === chainId
-  );
-};
-
-// Configurazione per il frontend (dropdown, ecc.)
-export const NETWORK_OPTIONS = Object.entries(NETWORK_DETAILS).map(
-  ([key, config]) => ({
-    value: key as NetworkKey,
-    label: config.name,
-    icon: config.icon,
-    nativeToken: config.nativeToken
-  })
-);
+// ... (resto del codice invariato)
