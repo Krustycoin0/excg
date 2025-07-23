@@ -2,7 +2,6 @@
 "use client";
 import { Buffer } from 'buffer';
 window.Buffer = window.Buffer || Buffer;
-window.Buffer = window.Buffer || Buffer;
 import { useEffect } from "react";
 import { MetaMaskProvider } from "@/context/MetaMaskContext";
 
