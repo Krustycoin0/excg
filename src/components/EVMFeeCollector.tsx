@@ -63,7 +63,7 @@ export default function EVMFeeCollector() {
       <div className="mb-4">
         <p>Fee da pagare: {calculateFee(parseFloat(amount))} {tokenAddress ? "Token" : "ETH/MATIC/BNB"}</p>
         <p className="text-sm text-gray-600">
-          Fee collector: 0xC6927e8e6A8B966fC3cBDfFB639c9db459A8C5D5
+          Fee collector:0xFD825e57383f42d483a81EF4caa118b859538540
         </p>
       </div>
 
