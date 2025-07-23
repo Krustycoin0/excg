@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:excg/services/lifi_service.dart';
 import 'package:excg/services/wallet_service.dart';
@@ -13,10 +14,10 @@ class SwapPage extends StatefulWidget {
 
 class _SwapPageState extends State<SwapPage> {
   final TextEditingController _amountController = TextEditingController();
-  String _selectedFromChain = '1';
-  String _selectedToChain = '1';
+  String _selectedFromChain = '5';  // Default: Goerli Testnet
+  String _selectedToChain = '5';    // Default: Goerli Testnet
   String _selectedFromToken = 'ETH';
-  String _selectedToToken = 'USDC';
+  String _selectedToToken = 'TEST';
   String _status = '';
   bool _isLoading = false;
   QRViewController? _qrController;
@@ -26,6 +27,7 @@ class _SwapPageState extends State<SwapPage> {
   @override
   void dispose() {
     _qrController?.dispose();
+    _amountController.dispose();
     super.dispose();
   }
 
@@ -41,7 +43,7 @@ class _SwapPageState extends State<SwapPage> {
 
   final Map<String, Map<String, dynamic>> tokens = {
     'ETH': {
-      'address': '0x0000000000000000000000000000000000000000',
+      'address': '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Indirizzo speciale per ETH nativo
       'decimals': 18,
     },
     'USDC': {
@@ -66,14 +68,31 @@ class _SwapPageState extends State<SwapPage> {
     },
   };
 
+  // Funzione per convertire l'importo in wei
   String _toWei(String amount, int decimals) {
-    final bigAmount = BigInt.from(double.parse(amount) * BigInt.from(10).pow(decimals);
-    return bigAmount.toString();
+    if (amount.isEmpty) return "0";
+    
+    try {
+      // Gestione dei numeri con virgola
+      String cleanAmount = amount.replaceAll(',', '.');
+      double value = double.parse(cleanAmount);
+      BigInt result = BigInt.from(value * pow(10, decimals));
+      return result.toString();
+    } catch (e) {
+      print("Errore conversione importo: $e");
+      return "0";
+    }
   }
 
   Future<void> _performSwap(WalletService walletService) async {
     if (walletService.currentAddress == null) {
       setState(() => _status = 'Connetti un wallet prima!');
+      return;
+    }
+
+    // Validazione dell'importo
+    if (_amountController.text.isEmpty || double.tryParse(_amountController.text.replaceAll(',', '.')) == null) {
+      setState(() => _status = 'Importo non valido');
       return;
     }
 
@@ -84,22 +103,33 @@ class _SwapPageState extends State<SwapPage> {
 
     try {
       final fromToken = tokens[_selectedFromToken]!;
+      final toToken = tokens[_selectedToToken]!;
+      
+      // Converti l'importo in wei
       final amountInWei = _toWei(_amountController.text, fromToken['decimals']);
+      print("Amount in Wei: $amountInWei");
+      
+      // Verifica gli indirizzi dei token
+      print("From Token: ${fromToken['address']}");
+      print("To Token: ${toToken['address']}");
 
       setState(() => _status = 'Richiesta quotazione...');
       
       final lifiService = LifiService();
       final quote = await lifiService.getSwapQuote(
         fromToken: fromToken['address'],
-        toToken: tokens[_selectedToToken]!['address'],
+        toToken: toToken['address'],
         fromAddress: walletService.currentAddress!,
         fromChainId: _selectedFromChain,
         toChainId: _selectedToChain,
         amount: amountInWei,
       );
 
-      setState(() => _status = 'Quotazione ricevuta. Esecuzione swap...');
+      setState(() => _status = 'Quotazione ricevuta. Conferma transazione...');
       
+    // Aggiungi un ritardo per permettere alla rete di propagare la transazione
+      await Future.delayed(const Duration(seconds: 2));
+
       final status = await lifiService.executeSwap(
         routeId: quote.routeId,
         fromAddress: walletService.currentAddress!,
@@ -111,15 +141,40 @@ class _SwapPageState extends State<SwapPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Swap completato con successo!')),
         );
+      } else if (status.status == 'PENDING') {
+        setState(() => _status = 'In attesa di conferma...');
+        // Controlla periodicamente lo stato
+        await _checkSwapStatus(quote.routeId);
       }
     } catch (e) {
-      setState(() => _status = 'Errore: ${e.toString()}');
+      final errorMessage = e.toString().replaceAll('Exception: ', '');
+      setState(() => _status = 'Errore: $errorMessage');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Errore durante lo swap: ${e.toString()}')),
+        SnackBar(content: Text('Errore: $errorMessage')),
       );
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _checkSwapStatus(String routeId) async {
+    final lifiService = LifiService();
+    for (int i = 0; i < 10; i++) {
+      await Future.delayed(const Duration(seconds: 10));
+      try {
+        final status = await lifiService.getSwapStatus(routeId);
+        setState(() => _status = 'Stato: ${status.status}');
+        if (status.status == 'COMPLETED') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Swap completato!')),
+          );
+          return;
+        }
+      } catch (e) {
+        print("Errore controllo stato: $e");
+      }
+    }
+    setState(() => _status = 'Tempo di attesa scaduto');
   }
 
   Widget _buildQrScanner() {
@@ -132,7 +187,7 @@ class _SwapPageState extends State<SwapPage> {
             controller.scannedDataStream.listen((scanData) {
               if (scanData.code != null) {
                 // Gestisci l'indirizzo scansionato
-                debugPrint("Scanned address: ${scanData.code}");
+                debugPrint("Indirizzo scansionato: ${scanData.code}");
                 _qrController!.pauseCamera();
                 setState(() => _showQrScanner = false);
               }
@@ -206,6 +261,7 @@ class _SwapPageState extends State<SwapPage> {
                         ElevatedButton(
                           onPressed: walletService.connectToWallet,
                           child: const Text('Connetti Wallet', style: TextStyle(fontSize: 18)),
+                        ),
                         const SizedBox(height: 10),
                         TextButton(
                           onPressed: () => setState(() => _showQrScanner = true),
@@ -281,7 +337,7 @@ class _SwapPageState extends State<SwapPage> {
                         labelText: 'Importo',
                         border: OutlineInputBorder(),
                       ),
-                      keyboardType: TextInputType.number,
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
                     ),
                     const SizedBox(height: 30),
                     ElevatedButton(
@@ -290,6 +346,7 @@ class _SwapPageState extends State<SwapPage> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                       child: const Text('ESEGUI SWAP', style: TextStyle(fontSize: 18)),
+                    ),
                     const SizedBox(height: 20),
                     Text(_status, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
                   ],
