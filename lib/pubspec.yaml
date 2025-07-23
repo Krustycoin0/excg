@@ -1,5 +1,5 @@
 name: excg
-description: App di scambio crittovalute
+description: App di scambio crittovalute con Li.Fi
 version: 1.0.0+1
 
 environment:
@@ -10,9 +10,11 @@ dependencies:
     sdk: flutter
   web3dart: ^3.0.0
   http: ^1.1.0
-  lifi_flutter: ^0.2.1
+  lifi_flutter: ^0.2.2
   provider: ^6.0.5
-  web3: ^0.3.0
+  walletconnect_flutter: ^2.0.0
+  qr_code_scanner: ^1.0.1
+  shared_preferences: ^2.2.2
 
 flutter:
   uses-material-design: true
