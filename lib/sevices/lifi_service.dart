@@ -5,6 +5,7 @@ class LifiService {
 
   LifiService() : _lifi = Lifi(
     apiKey: '37f3b0ae-58d0-423a-a895-133cd60f2b72.20bd41f0-014e-4389-9dfa-9eaefb8589e5',
+    baseUrl: 'https://li.quest',
   );
 
   Future<Quote> getSwapQuote({
@@ -25,8 +26,15 @@ class LifiService {
         amount: amount,
       );
 
-      return await _lifi.getQuote(request);
-    } catch (e) {
+      final quote = await _lifi.getQuote(request);
+      
+      // Debug: Stampa la risposta della quotazione
+      print("Quote Response: ${quote.toJson()}");
+      
+      return quote;
+    } catch (e, stack) {
+      print("Quote Error: $e");
+      print("Stack Trace: $stack");
       throw Exception("Errore nella quotazione: ${e.toString()}");
     }
   }
@@ -41,9 +49,26 @@ class LifiService {
         fromAddress: fromAddress,
       );
 
-      return await _lifi.executeSwap(executeRequest);
-    } catch (e) {
+      final status = await _lifi.executeSwap(executeRequest);
+      
+      // Debug: Stampa lo stato dello swap
+      print("Swap Status: ${status.toJson()}");
+      
+      return status;
+    } catch (e, stack) {
+      print("Execution Error: $e");
+      print("Stack Trace: $stack");
       throw Exception("Errore nell'esecuzione: ${e.toString()}");
+    }
+  }
+
+  Future<SwapStatus> getSwapStatus(String routeId) async {
+    try {
+      return await _lifi.getStatus(routeId);
+    } catch (e, stack) {
+      print("Status Error: $e");
+      print("Stack Trace: $stack");
+      throw Exception("Errore nel recupero dello stato: ${e.toString()}");
     }
   }
 }
