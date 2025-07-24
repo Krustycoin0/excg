@@ -1,0 +1,142 @@
+.swap-container {
+  padding: 2rem;
+  display: flex;
+  justify-content: center;
+  min-height: calc(100vh - 120px);
+}
+
+.swap-content {
+  width: 100%;
+  max-width: 500px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.swap-header {
+  padding: 2rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.swap-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.swap-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 12px;
+}
+
+.fee-info, .wallet-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fee-label, .wallet-label {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.fee-value, .wallet-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.wallet-value {
+  font-family: monospace;
+  font-size: 0.8rem;
+}
+
+/* Widget Container */
+.widget-container {
+  padding: 1rem;
+}
+
+/* Features Section */
+.features-section {
+  padding: 2rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.5rem;
+}
+
+.feature-card {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+}
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.feature-card h3 {
+  font-size: 1.1rem;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.feature-card p {
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* Responsive Widget */
+@media (max-width: 768px) {
+  .swap-container {
+    padding: 1rem;
+  }
+  
+  .swap-content {
+    margin: 0;
+  }
+  
+  .swap-header {
+    padding: 1.5rem;
+  }
+  
+  .swap-title {
+    font-size: 1.5rem;
+  }
+  
+  .swap-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .features-section {
+    padding: 1.5rem;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .feature-card {
+    padding: 1rem;
+  }
+}
